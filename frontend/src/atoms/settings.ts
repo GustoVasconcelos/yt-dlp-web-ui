@@ -19,7 +19,8 @@ export const languages = [
   'russian',
   'spanish',
   'swedish',
-  'ukrainian'
+  'ukrainian',
+  'hungarian'
 ] as const
 
 export type Language = (typeof languages)[number]
@@ -39,6 +40,7 @@ export interface SettingsState {
   cliArgs: string
   formatSelection: boolean
   fileRenaming: boolean
+  autoFileExtension: boolean
   pathOverriding: boolean
   enableCustomArgs: boolean
   listView: boolean
@@ -81,6 +83,11 @@ export const fileRenamingState = atomWithStorage(
   localStorage.getItem('file-renaming') === 'true'
 )
 
+export const autoFileExtensionState = atomWithStorage(
+  'auto-file-extension',
+  localStorage.getItem('auto-file-extension') === 'true'
+)
+
 export const pathOverridingState = atomWithStorage(
   'path-overriding',
   localStorage.getItem('path-overriding') === 'true'
@@ -114,11 +121,18 @@ export const appTitleState = atomWithStorage(
 export const serverAddressAndPortState = atom((get) => {
   if (get(servedFromReverseProxySubDirState)) {
     return `${get(serverAddressState)}/${get(servedFromReverseProxySubDirState)}/`
+      .replaceAll('"', '')    // XXX: atomWithStorage uses JSON.stringify to serialize
+      .replaceAll('//', '/')  // which puts extra double quotes.
   }
   if (get(servedFromReverseProxyState)) {
     return `${get(serverAddressState)}`
+      .replaceAll('"', '')
   }
-  return `${get(serverAddressState)}:${get(serverPortState)}`
+
+  const sap = `${get(serverAddressState)}:${get(serverPortState)}`
+    .replaceAll('"', '')
+
+  return sap.endsWith('/') ? sap.slice(0, -1) : sap
 })
 
 export const serverURL = atom((get) =>
@@ -127,15 +141,17 @@ export const serverURL = atom((get) =>
 
 export const rpcWebSocketEndpoint = atom((get) => {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${get(serverAddressAndPortState)}/rpc/ws`
-}
-)
+  const sap = get(serverAddressAndPortState)
+
+  return `${proto}//${sap.endsWith('/') ? sap.slice(0, -1) : sap}/rpc/ws`
+})
 
 export const rpcHTTPEndpoint = atom((get) => {
   const proto = window.location.protocol
-  return `${proto}//${get(serverAddressAndPortState)}/rpc/http`
-}
-)
+  const sap = get(serverAddressAndPortState)
+
+  return `${proto}//${sap.endsWith('/') ? sap.slice(0, -1) : sap}/rpc/http`
+})
 
 export const serverSideCookiesState = atom<Promise<string>>(async (get) => await pipe(
   ffetch<Readonly<{ cookies: string }>>(`${get(serverURL)}/api/v1/cookies`),
@@ -167,10 +183,10 @@ export const settingsState = atom<SettingsState>((get) => ({
   cliArgs: get(latestCliArgumentsState),
   formatSelection: get(formatSelectionState),
   fileRenaming: get(fileRenamingState),
+  autoFileExtension: get(autoFileExtensionState),
   pathOverriding: get(pathOverridingState),
   enableCustomArgs: get(enableCustomArgsState),
   listView: get(listViewState),
   servedFromReverseProxy: get(servedFromReverseProxyState),
   appTitle: get(appTitleState)
-})
-)
+}))

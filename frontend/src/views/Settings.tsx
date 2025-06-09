@@ -18,7 +18,7 @@ import {
   capitalize
 } from '@mui/material'
 import { useAtom } from 'jotai'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Subject,
   debounceTime,
@@ -36,6 +36,7 @@ import {
   appTitleState,
   enableCustomArgsState,
   fileRenamingState,
+  autoFileExtensionState,
   formatSelectionState,
   languageState,
   languages,
@@ -50,6 +51,7 @@ import CookiesTextField from '../components/CookiesTextField'
 import UpdateBinaryButton from '../components/UpdateBinaryButton'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
+import Translator from '../lib/i18n'
 import { validateDomain, validateIP } from '../utils'
 
 // NEED ABSOLUTELY TO BE SPLIT IN MULTIPLE COMPONENTS
@@ -60,6 +62,7 @@ export default function Settings() {
   const [formatSelection, setFormatSelection] = useAtom(formatSelectionState)
   const [pathOverriding, setPathOverriding] = useAtom(pathOverridingState)
   const [fileRenaming, setFileRenaming] = useAtom(fileRenamingState)
+  const [autoFileExtension, setAutoFileExtension] = useAtom(autoFileExtensionState)
   const [enableArgs, setEnableArgs] = useAtom(enableCustomArgsState)
 
   const [serverAddr, setServerAddr] = useAtom(serverAddressState)
@@ -81,6 +84,9 @@ export default function Settings() {
   const baseURL$ = useMemo(() => new Subject<string>(), [])
   const serverAddr$ = useMemo(() => new Subject<string>(), [])
   const serverPort$ = useMemo(() => new Subject<string>(), [])
+
+  const [, updateState] = useState({})
+  const forceUpdate = useCallback(() => updateState({}), [])
 
   useEffect(() => {
     const sub = baseURL$
@@ -133,6 +139,11 @@ export default function Settings() {
    */
   const handleLanguageChange = (event: SelectChangeEvent<Language>) => {
     setLanguage(event.target.value as Language)
+
+    Translator.instance.setLanguage(event.target.value)
+    setTimeout(() => {
+      forceUpdate()
+    }, 100)
   }
 
   /**
@@ -275,8 +286,8 @@ export default function Settings() {
                 label={i18n.t('themeSelect')}
                 onChange={handleThemeChange}
               >
-                <MenuItem value="light">Light</MenuItem>
-                <MenuItem value="dark">Dark</MenuItem>
+                <MenuItem value="light">{i18n.t('lightThemeButton')}</MenuItem>
+                <MenuItem value="dark">{i18n.t('darkThemeButton')}</MenuItem>
                 <MenuItem value="system">System</MenuItem>
               </Select>
             </FormControl>
@@ -299,7 +310,7 @@ export default function Settings() {
           </Grid>
         </Grid>
         <Typography variant="h6" color="primary" sx={{ mt: 2, mb: 0.5 }}>
-          General download settings
+          {i18n.t('generalDownloadSettings')}
         </Typography>
 
         <FormControlLabel
@@ -334,12 +345,30 @@ export default function Settings() {
                 <Switch
                   defaultChecked={fileRenaming}
                   onChange={() => {
+                    if (fileRenaming) {
+                      setAutoFileExtension(false)
+                    }
                     setFileRenaming(state => !state)
                   }}
                 />
               }
               label={i18n.t('filenameOverrideOption')}
             />
+            {
+              <FormControlLabel
+                control={
+                  <Switch
+                    disabled={!fileRenaming}
+                    checked={fileRenaming ? autoFileExtension : false}
+                    defaultChecked={autoFileExtension}
+                    onChange={() => {
+                      setAutoFileExtension(state => !state)
+                    }}
+                  />
+                }
+                label={i18n.t('autoFileExtensionOption')}
+              /> 
+            }
             <FormControlLabel
               control={
                 <Switch

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/archiver"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/common"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/config"
 )
 
@@ -48,8 +49,9 @@ type Process struct {
 	Id         string
 	Url        string
 	Livestream bool
+	AutoRemove bool
 	Params     []string
-	Info       DownloadInfo
+	Info       common.DownloadInfo
 	Progress   DownloadProgress
 	Output     DownloadOutput
 	proc       *os.Process
@@ -253,6 +255,8 @@ func (p *Process) Complete() {
 		slog.String("id", p.getShortId()),
 		slog.String("url", p.Url),
 	)
+
+	memDbEvents <- p
 }
 
 // Kill a process and remove it from the memory
@@ -299,7 +303,7 @@ func (p *Process) GetFileName(o *DownloadOutput) error {
 
 func (p *Process) SetPending() {
 	// Since video's title isn't available yet, fill in with the URL.
-	p.Info = DownloadInfo{
+	p.Info = common.DownloadInfo{
 		URL:       p.Url,
 		Title:     p.Url,
 		CreatedAt: time.Now(),
@@ -331,7 +335,7 @@ func (p *Process) SetMetadata() error {
 		return err
 	}
 
-	info := DownloadInfo{
+	info := common.DownloadInfo{
 		URL:       p.Url,
 		CreatedAt: time.Now(),
 	}

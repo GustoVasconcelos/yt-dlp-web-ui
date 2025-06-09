@@ -1,5 +1,6 @@
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import BuildCircleIcon from '@mui/icons-material/BuildCircle'
+import ClearAllIcon from '@mui/icons-material/ClearAll'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import FolderZipIcon from '@mui/icons-material/FolderZip'
 import FormatListBulleted from '@mui/icons-material/FormatListBulleted'
@@ -31,16 +32,22 @@ const HomeSpeedDial: React.FC<Props> = ({ onDownloadOpen, onEditorOpen }) => {
       ariaLabel="Home speed dial"
       sx={{ position: 'absolute', bottom: 64, right: 24 }}
       icon={<SpeedDialIcon />}
+      onClick={onDownloadOpen}
     >
       <SpeedDialAction
         icon={listView ? <ViewAgendaIcon /> : <FormatListBulleted />}
-        tooltipTitle={listView ? 'Card view' : 'Table view'}
+        tooltipTitle={listView ? 'Card view' : i18n.t('tableView')}
         onClick={() => setListView(state => !state)}
       />
       <SpeedDialAction
         icon={<FolderZipIcon />}
         tooltipTitle={i18n.t('bulkDownload')}
         onClick={() => window.open(`${serverAddr}/archive/bulk?token=${localStorage.getItem('token')}`)}
+      />
+      <SpeedDialAction
+        icon={<ClearAllIcon />}
+        tooltipTitle={i18n.t('clearCompletedButton')}
+        onClick={() => client.clearCompleted()}
       />
       <SpeedDialAction
         icon={<DeleteForeverIcon />}

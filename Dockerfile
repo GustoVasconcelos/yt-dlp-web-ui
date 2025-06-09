@@ -1,8 +1,8 @@
 # Node (pnpm) ------------------------------------------------------------------
-FROM node:20-slim AS ui
+FROM node:22-slim AS ui
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN corepack prepare pnpm@10.0.0 --activate && corepack enable
 COPY . /usr/src/yt-dlp-webui
 
 WORKDIR /usr/src/yt-dlp-webui/frontend
@@ -24,11 +24,12 @@ COPY --from=ui /usr/src/yt-dlp-webui/frontend /usr/src/yt-dlp-webui/frontend
 RUN CGO_ENABLED=0 GOOS=linux go build -o yt-dlp-webui
 # -----------------------------------------------------------------------------
 
-# dependencies ----------------------------------------------------------------
-FROM alpine:edge
+# Runtime ---------------------------------------------------------------------
+FROM python:3.13.2-alpine3.21
 
 RUN apk update && \
-apk add ffmpeg yt-dlp ca-certificates curl wget psmisc
+apk add ffmpeg ca-certificates curl wget gnutls --no-cache && \
+pip install "yt-dlp[default,curl-cffi,mutagen,pycryptodomex,phantomjs,secretstorage]"
 
 VOLUME /downloads /config
 

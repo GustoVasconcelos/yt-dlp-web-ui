@@ -41,11 +41,13 @@ export class RPCClient {
     })
   }
 
-  private argsSanitizer(args: string) {
+  private argsSanitizer(args: string): string[] {
+    const splitOnlyWhitespaces = /[^\s"']+|"([^"]*)"|'([^']*)'/gm
+
     return args
-      .split(' ')
-      .map(a => a.trim().replaceAll("'", '').replaceAll('"', ''))
-      .filter(Boolean)
+      .match(splitOnlyWhitespaces)
+      ?.map(a => a.trim())
+      .filter(Boolean) ?? []
   }
 
   private async sendHTTP<T>(req: RPCRequest) {
@@ -195,6 +197,13 @@ export class RPCClient {
   public updateExecutable() {
     return this.sendHTTP({
       method: 'Service.UpdateExecutable',
+      params: []
+    })
+  }
+
+  public clearCompleted() {
+    return this.sendHTTP({
+      method: 'Service.ClearCompleted',
       params: []
     })
   }
